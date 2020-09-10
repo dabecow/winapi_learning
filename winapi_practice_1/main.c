@@ -3,6 +3,7 @@
 #endif
 
 #define WM_LBUTTONDOWN    0x0201
+#define WM_RBUTTONDOWN    0x0204
 
 #include <windows.h>
 #include <stdio.h>
@@ -98,6 +99,31 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
         }
             return 0;
+        case WM_RBUTTONDOWN:
+        {
+            const wchar_t childClassName[] = L"Child Window Class";
+            if (FindWindow(childClassName, NULL) != NULL) {
+
+                HWND hwndChild = FindWindow(childClassName, NULL);
+
+                if (hwndChild == NULL) {
+                    return 0;
+                }
+                POINT prevPoint, nextPoint;
+
+                GetCursorPos(&prevPoint);
+
+                HWND mainWindow = WindowFromPoint(prevPoint);
+                RECT rect;
+                GetClientRect(mainWindow, &rect);
+
+                nextPoint.x = rect.right - prevPoint.x;
+                nextPoint.y = rect.bottom - prevPoint.y;
+
+                MoveWindow(hwndChild, nextPoint.x, nextPoint.y, 60, 60, TRUE);
+            }
+            return 0;
+        }
         case WM_PAINT:
         {
             PAINTSTRUCT ps;
