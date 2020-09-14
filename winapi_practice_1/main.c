@@ -109,24 +109,28 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 if (hwndChild == NULL) {
                     return 0;
                 }
-                POINT prevPoint, nextPoint;
+                POINT point, nextPos;
 
-                GetCursorPos(&prevPoint);
+                GetCursorPos(&point);
 
-                HWND mainWindow = WindowFromPoint(prevPoint);
-                RECT rect, clientRect;
-//                RECT *rect = malloc(sizeof(RECT));
-//                RECT *osRect = malloc(sizeof(RECT));
-                GetWindowRect(mainWindow, &rect);
-                GetClientRect(mainWindow, &clientRect);
-                nextPoint.x = 2*rect.left + (rect.right - rect.left - clientRect.right)/2 + clientRect.right - prevPoint.x + 5;
+                HWND mainWindow = WindowFromPoint(point);
+                RECT mainRect, childRect;
+                GetWindowRect(mainWindow, &mainRect);
+                GetWindowRect(hwndChild, &childRect);
+                if (point.x > childRect.right)
+                    nextPos.x = point.x + point.x - childRect.right;
+                else
+                    nextPos.x = point.x - (childRect.left - point.x) - (childRect.right - childRect.left);
+//                    nextPos.x = childRect.right - (childRect.left - point.x) - (childRect.right - childRect.left);
+                if (point.y < childRect.top)
+                    nextPos.y = point.y - (childRect.top - point.y) - (childRect.bottom - childRect.top);
+                else
+                    nextPos.y = point.y + point.y - childRect.bottom;
+//                nextPoint.x = 2*rect.left + (rect.right - rect.left - clientRect.right)/2 + clientRect.right - prevPoint.x + 5;
+//
+//                nextPoint.y = rect.bottom + (rect.bottom - clientRect.bottom) - prevPoint.y - 20;
 
-                nextPoint.y = rect.bottom + (rect.bottom - clientRect.bottom) - prevPoint.y - 20;
-                printf("x = %ld, y = %ld\n", prevPoint.x, prevPoint.y);
-//                printf("%ld - %ld + %ld = %ld\n\n\n", rect.right, prevPoint.x, osRect.left, nextPoint.x);
-
-
-                MoveWindow(hwndChild, nextPoint.x, nextPoint.y, 60, 60, TRUE);
+                MoveWindow(hwndChild, nextPos.x, nextPos.y, 60, 60, TRUE);
             }
             return 0;
         }
