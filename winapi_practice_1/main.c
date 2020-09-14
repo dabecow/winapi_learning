@@ -88,7 +88,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 RegisterClass(&wc);
                 POINT p;
                 GetCursorPos(&p);
-                HWND hwndChild = CreateWindowEx(0, childClassName, L"Coordinates", WS_SIZEBOX | WS_CLIPSIBLINGS | WS_SYSMENU,
+                HWND hwndChild = CreateWindowEx(0, childClassName, L"Coordinates", WS_CLIPSIBLINGS | WS_SYSMENU,
                                                 p.x, p.y, 60, 60, hwnd, NULL, NULL, NULL);
 
                 if (hwndChild == NULL) {
@@ -114,11 +114,17 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 GetCursorPos(&prevPoint);
 
                 HWND mainWindow = WindowFromPoint(prevPoint);
-                RECT rect;
-                GetClientRect(mainWindow, &rect);
+                RECT rect, clientRect;
+//                RECT *rect = malloc(sizeof(RECT));
+//                RECT *osRect = malloc(sizeof(RECT));
+                GetWindowRect(mainWindow, &rect);
+                GetClientRect(mainWindow, &clientRect);
+                nextPoint.x = 2*rect.left + (rect.right - rect.left - clientRect.right)/2 + clientRect.right - prevPoint.x + 5;
 
-                nextPoint.x = rect.right - prevPoint.x;
-                nextPoint.y = rect.bottom - prevPoint.y;
+                nextPoint.y = rect.bottom + (rect.bottom - clientRect.bottom) - prevPoint.y - 20;
+                printf("x = %ld, y = %ld\n", prevPoint.x, prevPoint.y);
+//                printf("%ld - %ld + %ld = %ld\n\n\n", rect.right, prevPoint.x, osRect.left, nextPoint.x);
+
 
                 MoveWindow(hwndChild, nextPoint.x, nextPoint.y, 60, 60, TRUE);
             }
@@ -148,19 +154,22 @@ LRESULT CALLBACK childWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
         {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hwnd, &ps);
+
             POINT point;
             GetCursorPos(&point);
+
+
 
             char letter[256];
             sprintf(letter, "X = %ld, Y = %ld", point.x, point.y);
 //            wchar_t unicodeLetter[256];
 //            swprintf(unicodeLetter, 256, L"X = %ld, Y = %ld", point.x, point.y);
 //            TextOut(hdc, CW_USEDEFAULT, CW_USEDEFAULT, unicodeLetter, 256);
-            TextOutA(hdc, CW_USEDEFAULT, CW_USEDEFAULT, letter, 256);
+            TextOutA(hdc, CW_USEDEFAULT, CW_USEDEFAULT, letter, strlen(letter));
             EndPaint(hwnd, &ps);
             ReleaseDC(hwnd, hdc);
 
-            FillRect(hdc, &ps.rcPaint, (HBRUSH) (COLOR_WINDOW+1));
+
 
             EndPaint(hwnd, &ps);
         }
