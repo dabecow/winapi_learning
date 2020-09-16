@@ -93,8 +93,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 p.x = GET_X_LPARAM(lParam);
                 p.y = GET_Y_LPARAM(lParam);
 
-                HWND hwndChild = CreateWindowEx(0, childClassName, L"Coordinates", WS_CHILD  | WS_OVERLAPPEDWINDOW | WS_SYSMENU,
-                                                p.x, p.y, 100, 100, hwnd, NULL, NULL, NULL);
+                HWND hwndChild = CreateWindowEx(0, childClassName, L"Coordinates", WS_CHILD  | WS_OVERLAPPEDWINDOW,
+                                                p.x, p.y, 200, 100, hwnd, NULL, NULL, NULL);
 
                 if (hwndChild == NULL) {
                     return 0;
@@ -133,32 +133,35 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 //                else
 //                    nextPos.y = point.y + point.y - childRect.bottom;
 
-                RECT rect, clientRect;
+                RECT rect, childRect;
 //                RECT *rect = malloc(sizeof(RECT));
 //                RECT *osRect = malloc(sizeof(RECT));
                 GetWindowRect(hwnd, &rect);
-                GetClientRect(hwnd, &clientRect);
+                GetWindowRect(hwndChild, &childRect);
 
                 POINT center;
                 center.x = rect.left + (rect.right-rect.left)/2;
                 center.y = rect.top + (rect.bottom-rect.top)/2;
+                ScreenToClient(hwnd, &center);
+                ScreenToClient(hwnd, &point);
+                POINT   q1, q3;
 
-                POINT   q1, q4;
-
-                q1.x = center.x / 2;
+                q1.x = center.x + center.x / 2;
                 q1.y = center.y / 2;
-                q4.x = center.x + center.x / 2;;
-                q4.y = center.y + center.y / 2;
+                q3.x = center.x / 2;;
+                q3.y = center.y + center.y / 2;
 
                 if (point.x > center.x)
-                    nextPos.x = q1.x;
+                    nextPos.x = q3.x;
                 else
-                    nextPos.x = q4.x;
+                    nextPos.x = q1.x;
 
                 if (point.y > center.y)
-                    nextPos.y = q1.x;
+                    nextPos.y = q1.y;
                 else
-                    nextPos.y = q4.y;
+                    nextPos.y = q3.y;
+//                nextPos.x = center.x;
+//                nextPos.y = center.y;
 //                nextPos.x =
 //                nextPos.x = 2*rect.left + (rect.right - rect.left - clientRect.right)/2 + clientRect.right - point.x + 5;
 //
@@ -168,7 +171,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 //
 //                nextPos.x = rect.right - point.x;
 //                nextPos.y = rect.bottom - point.y;
-                MoveWindow(hwndChild, nextPos.x, nextPos.y, 60, 60, TRUE);
+                nextPos.x -= (childRect.right - childRect.left)/2;
+                nextPos.y -= (childRect.bottom - childRect.top)/2;
+//                ScreenToClient(hwnd, &nextPos);
+                MoveWindow(hwndChild, nextPos.x, nextPos.y, 200, 100, TRUE);
             }
             return 0;
         }
