@@ -139,6 +139,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 GetWindowRect(hwnd, &rect);
                 GetWindowRect(hwndChild, &childRect);
 
+
                 POINT center;
                 center.x = rect.left + (rect.right-rect.left)/2;
                 center.y = rect.top + (rect.bottom-rect.top)/2;
@@ -175,6 +176,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 nextPos.y -= (childRect.bottom - childRect.top)/2;
 //                ScreenToClient(hwnd, &nextPos);
                 MoveWindow(hwndChild, nextPos.x, nextPos.y, 200, 100, TRUE);
+
             }
             return 0;
         }
@@ -210,9 +212,6 @@ LRESULT CALLBACK childWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 
             char letter[256];
             sprintf(letter, "X = %ld, Y = %ld", point.x, point.y);
-//            wchar_t unicodeLetter[256];
-//            swprintf(unicodeLetter, 256, L"X = %ld, Y = %ld", point.x, point.y);
-//            TextOut(hdc, CW_USEDEFAULT, CW_USEDEFAULT, unicodeLetter, 256);
             TextOutA(hdc, CW_USEDEFAULT, CW_USEDEFAULT, letter, strlen(letter));
             EndPaint(hwnd, &ps);
             ReleaseDC(hwnd, hdc);
