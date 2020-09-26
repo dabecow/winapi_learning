@@ -105,12 +105,14 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
 
+
             EndPaint(hWnd, &ps);
         }
             return 0;
     }
     return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
+
 
 void showError(DWORD errorCode){
 

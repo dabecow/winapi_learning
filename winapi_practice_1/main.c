@@ -7,6 +7,8 @@
 
 #include <windows.h>
 #include <stdio.h>
+#include <windowsx.h>
+
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK childWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -16,7 +18,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
                      LPSTR     lpCmdLine,
                      int       nCmdShow)
 {
-    const wchar_t CLASS_NAME[]  = L"Sample Window Class";
+    const wchar_t CLASS_NAME[]  = L"ParentWindow";
 
     WNDCLASS wc = { };
 
@@ -31,7 +33,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
     HWND hwnd = CreateWindowEx(
             0,                              // Optional window styles.
             CLASS_NAME,                     // Window class
-            L"Learn to Program Windows",    // Window text
+            L"ParentWindow",    // Window text
             WS_OVERLAPPEDWINDOW,            // Window style
 
             // Size and position
@@ -75,8 +77,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         case WM_LBUTTONDOWN:
         {
             const wchar_t childClassName[] = L"Child Window Class";
-            if (FindWindow(childClassName, NULL) != NULL) {
-                DestroyWindow(FindWindow(childClassName, NULL));
+            HWND checkHandle = FindWindowEx(hwnd, NULL, NULL, NULL);
+            if (checkHandle != NULL) {
+                DestroyWindow(checkHandle);
             }
 
                 WNDCLASS wc = {};
@@ -87,9 +90,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
                 RegisterClass(&wc);
                 POINT p;
-                GetCursorPos(&p);
-                HWND hwndChild = CreateWindowEx(0, childClassName, L"Coordinates", WS_CLIPSIBLINGS | WS_SYSMENU,
-                                                p.x, p.y, 60, 60, hwnd, NULL, NULL, NULL);
+                p.x = GET_X_LPARAM(lParam);
+                p.y = GET_Y_LPARAM(lParam);
+
+                HWND hwndChild = CreateWindowEx(0, childClassName, L"Coordinates", WS_CHILD  | WS_OVERLAPPEDWINDOW,
+                                                p.x, p.y, 200, 100, hwnd, NULL, NULL, NULL);
 
                 if (hwndChild == NULL) {
                     return 0;
@@ -101,34 +106,77 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             return 0;
         case WM_RBUTTONDOWN:
         {
-            const wchar_t childClassName[] = L"Child Window Class";
-            if (FindWindow(childClassName, NULL) != NULL) {
+            if (FindWindowEx(hwnd, NULL, NULL, NULL) != NULL) {
 
-                HWND hwndChild = FindWindow(childClassName, NULL);
+                HWND hwndChild = FindWindowEx(hwnd, NULL, NULL, NULL);
 
                 if (hwndChild == NULL) {
+                    printf("No windows found");
                     return 0;
                 }
                 POINT point, nextPos;
 
                 GetCursorPos(&point);
+//                ScreenToClient(hwnd, &point);
+//                point.x = GET_X_LPARAM(lParam);
+//                point.y = GET_Y_LPARAM(lParam);
 
-                HWND mainWindow = WindowFromPoint(point);
-                RECT mainRect, childRect;
-                GetWindowRect(mainWindow, &mainRect);
+//                RECT mainRect, childRect;
+//                GetWindowRect(hwnd, &mainRect);
+//                GetWindowRect(hwndChild, &childRect);
+//                if (point.x > childRect.right)
+//                    nextPos.x = point.x + point.x - childRect.right;
+//                else
+//                    nextPos.x = point.x - (childRect.left - point.x) - (childRect.right - childRect.left);
+//                if (point.y < childRect.top)
+//                    nextPos.y = point.y - (childRect.top - point.y) - (childRect.bottom - childRect.top);
+//                else
+//                    nextPos.y = point.y + point.y - childRect.bottom;
+
+                RECT rect, childRect;
+//                RECT *rect = malloc(sizeof(RECT));
+//                RECT *osRect = malloc(sizeof(RECT));
+                GetWindowRect(hwnd, &rect);
                 GetWindowRect(hwndChild, &childRect);
 
-                if (point.x > childRect.right)
-                    nextPos.x = point.x + point.x - childRect.right;
-                else
-                    nextPos.x = point.x - (childRect.left - point.x) - (childRect.right - childRect.left);
 
-                if (point.y < childRect.top)
-                    nextPos.y = point.y - (childRect.top - point.y) - (childRect.bottom - childRect.top);
-                else
-                    nextPos.y = point.y + point.y - childRect.bottom;
+                POINT center;
+                center.x = rect.left + (rect.right-rect.left)/2;
+                center.y = rect.top + (rect.bottom-rect.top)/2;
+                ScreenToClient(hwnd, &center);
+                ScreenToClient(hwnd, &point);
+                POINT   q1, q3;
 
-                MoveWindow(hwndChild, nextPos.x, nextPos.y, 60, 60, TRUE);
+                q1.x = center.x + center.x / 2;
+                q1.y = center.y / 2;
+                q3.x = center.x / 2;;
+                q3.y = center.y + center.y / 2;
+
+                if (point.x > center.x)
+                    nextPos.x = q3.x;
+                else
+                    nextPos.x = q1.x;
+
+                if (point.y > center.y)
+                    nextPos.y = q1.y;
+                else
+                    nextPos.y = q3.y;
+//                nextPos.x = center.x;
+//                nextPos.y = center.y;
+//                nextPos.x =
+//                nextPos.x = 2*rect.left + (rect.right - rect.left - clientRect.right)/2 + clientRect.right - point.x + 5;
+//
+//                nextPos.y = rect.bottom + (rect.bottom - clientRect.bottom) - point.y - 20;
+//                printf("x = %ld, y = %ld\n", point.x, point.y);
+////                printf("%ld - %ld + %ld = %ld\n\n\n", rect.right, prevPoint.x, osRect.left, nextPoint.x);
+//
+//                nextPos.x = rect.right - point.x;
+//                nextPos.y = rect.bottom - point.y;
+                nextPos.x -= (childRect.right - childRect.left)/2;
+                nextPos.y -= (childRect.bottom - childRect.top)/2;
+//                ScreenToClient(hwnd, &nextPos);
+                MoveWindow(hwndChild, nextPos.x, nextPos.y, 200, 100, TRUE);
+
             }
             return 0;
         }
@@ -159,8 +207,8 @@ LRESULT CALLBACK childWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 
             POINT point;
             GetCursorPos(&point);
-
-
+            ScreenToClient(GetParent(hwnd), &point);
+            FillRect(hdc, &ps.rcPaint, (HBRUSH) (COLOR_WINDOW+1));
 
             char letter[256];
             sprintf(letter, "X = %ld, Y = %ld", point.x, point.y);
