@@ -4,31 +4,53 @@
 
 #define CM_NEWMDIWND             24331
 
-#define CM_FILEOPEN            24332
-
-
 #include <stdio.h>
 #include "windows.h"
 
-
-// Идентификатор меню верхнего уровня
-//HMENU               hmenu, hmenuFile;
-
+HINSTANCE           hinstance;
 HWND                hwndMDIClient;
+HWND                array[10];
 
 wchar_t             szFrame[] = L"Main Window Frame Class";
 wchar_t             szChild[] = L"MDI Window Child Class";
 
+BOOL addHwndToArr(HWND hWnd){
+    for (int i = 0; i < 10; ++i) {
+        if (array[i] == 0){
+            array[i] = hWnd;
+            return TRUE;
+        }
+    }
+
+    SendMessage(hwndMDIClient, WM_MDIDESTROY, (HWND) hWnd, 0);
+    return FALSE;
+}
+
+BOOL delHwndFromArr(HWND hwnd){
+    for (int i = 0; i < 10; ++i) {
+        if (array[i] == hwnd){
+            array[i] = 0;
+            SendMessage(hwndMDIClient, WM_MDIDESTROY, hwnd, 1);
+
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+HWND createMdiChildWindow();
 BOOL WINAPI InitializeApplication();
+
 LRESULT CALLBACK FrameWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK MDIChildWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-HWND createMdiChildWindow();
 
 int APIENTRY WinMain(HINSTANCE hInstance,
                      HINSTANCE hPrevInstance,
                      LPSTR lpCmdLine,
                      int nCmdShow){
 
+    hinstance = hInstance;
+    
     if (!InitializeApplication()){
         printf("An error occurred");
         return 0;
@@ -74,11 +96,10 @@ BOOL WINAPI InitializeApplication()
 
     // Register the frame window class.
 
-    wc.style         = 0;
+    wc.style         = CS_HREDRAW | CS_VREDRAW;
     wc.lpfnWndProc   = (WNDPROC) FrameWndProc;
-    wc.cbClsExtra    = 0;
-    wc.cbWndExtra    = 0;
-    wc.hInstance     = GetModuleHandle(NULL);
+
+    wc.hInstance     = hinstance;
     wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
     wc.hbrBackground = (HBRUSH) (COLOR_APPWORKSPACE + 1);
     wc.lpszClassName = szFrame;
@@ -94,24 +115,20 @@ BOOL WINAPI InitializeApplication()
 
     if (!RegisterClass(&wc))
         return FALSE;
-
     return TRUE;
 }
 
 LRESULT CALLBACK FrameWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
+
     switch(uMsg){
         case WM_CREATE:
         {
             HMENU hmenu = CreateMenu();
-            HMENU hmenuFile = CreatePopupMenu();
 
             SetMenu(hWnd, hmenu);
 
             AppendMenu(hmenu, MF_ENABLED | MF_POPUP,
-                       (UINT)hmenuFile, L"File");
-
-            AppendMenu(hmenuFile, MF_ENABLED | MF_STRING,
-                       CM_NEWMDIWND,    L"New MDI Window");
+                       CM_NEWMDIWND, L"New MDI Window");
 
             DrawMenuBar(hWnd);
 
@@ -121,8 +138,8 @@ LRESULT CALLBACK FrameWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
             ccs.idFirstChild = 1000;
 
             hwndMDIClient = CreateWindow( L"MDICLIENT", (LPCTSTR) NULL,
-                                          WS_CHILD | WS_CLIPCHILDREN | WS_VSCROLL | WS_HSCROLL,
-                                          0, 0, 0, 0, hWnd, (HMENU) 0xCAC, GetModuleHandle(NULL), (LPSTR) &ccs);
+                                          WS_CHILD | WS_CLIPCHILDREN | WS_VSCROLL | WS_HSCROLL | WS_VISIBLE | MDIS_ALLCHILDSTYLES,
+                                          0, 0, 0, 0, hWnd, 0, hinstance, (LPSTR) &ccs);
 
             ShowWindow(hwndMDIClient, SW_SHOW);
 
@@ -133,15 +150,11 @@ LRESULT CALLBACK FrameWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
             switch (wParam) {
                 case CM_NEWMDIWND: {
                     HWND mdiChildWindow = createMdiChildWindow();
-
-                    ShowWindow(mdiChildWindow, SW_SHOW);
+                    if (addHwndToArr(mdiChildWindow))
+                        ShowWindow(mdiChildWindow, SW_SHOW);
+                    else MessageBox(hWnd, L"You can't create more MDI windows.", NULL, MB_OK);
                 }
                     break;
-                default:{
-                    MessageBox(hWnd, L"Функция не реализована",
-                               NULL, MB_OK);
-                    return 0;
-                }
 
             }
         }
@@ -150,7 +163,6 @@ LRESULT CALLBACK FrameWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
             DestroyWindow(hWnd);
         case WM_DESTROY:
             PostQuitMessage(0);
-            return 0;
         case WM_PAINT:
         {
 
@@ -167,7 +179,25 @@ LRESULT CALLBACK FrameWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 }
 
 LRESULT CALLBACK MDIChildWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
+
     switch(uMsg){
+
+        case WM_CREATE:
+            break;
+        case WM_CHILDACTIVATE:
+            break;
+        case WM_PAINT: {
+
+            PAINTSTRUCT ps;
+            HDC hdc = BeginPaint(hWnd, &ps);
+            FillRect(hdc, &ps.rcPaint, (HBRUSH) (COLOR_WINDOW + 1));
+            EndPaint(hWnd, &ps);
+        }
+        break;
+        case WM_CLOSE:
+            delHwndFromArr(hWnd);
+            SendMessage(hwndMDIClient, WM_MDIDESTROY, hWnd, 1);
+            break;
 
     }
     return DefMDIChildProc(hWnd, uMsg, wParam, lParam);
@@ -177,8 +207,8 @@ HWND createMdiChildWindow(){
 
     MDICREATESTRUCT mcs;
 
-    mcs.szClass = L"MDICLIENT";
-    mcs.hOwner  = GetModuleHandle(NULL);
+    mcs.szClass = szChild;
+    mcs.hOwner  = hinstance;
     mcs.szTitle = L"MDI child window";
 
     mcs.x = mcs.cx = CW_USEDEFAULT;
