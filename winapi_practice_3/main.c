@@ -15,6 +15,7 @@
 
 HINSTANCE           hInstGlobal;
 HWND                hwndMDIClient;
+HWND                currentHwnd;
 HWND                array[ARRAY_LENGTH];
 
 wchar_t             szFrame[] = L"Main Window Frame Class";
@@ -198,16 +199,16 @@ LRESULT CALLBACK FrameWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
                         }
                     } else {
 
-                        HWND sample;
 
-                        for (int i = 0; i < ARRAY_LENGTH; ++i) {
-                            if (array[i] != 0){
-                                sample = array[i];
-                                break;
-                            }
-                        }
 
-                        GetWindowTextA(FindWindowEx(sample, NULL, NULL, NULL), str, 1024);
+//                        for (int i = 0; i < ARRAY_LENGTH; ++i) {
+//                            if (array[i] != 0){
+//                                currentHwnd = array[i];
+//                                break;
+//                            }
+//                        }
+
+                        GetWindowTextA(FindWindowEx(currentHwnd, NULL, NULL, NULL), str, 1024);
                         DWORD err = GetLastError();
                         printf(" ");
 
@@ -275,6 +276,7 @@ LRESULT CALLBACK MDIChildWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
             }
             break;
         case WM_CHILDACTIVATE:
+            currentHwnd = hWnd;
             break;
         case WM_PAINT: {
 
