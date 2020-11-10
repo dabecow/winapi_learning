@@ -3,19 +3,25 @@
 #endif
 
 #define CM_NEWMDIWND             24331
+#define AWM_TEXT                 2000
+#define AWM_SENDTEXT             2001
+#define ARRAY_LENGTH             5
 
+#include <windows.h>
+#include <winuser.h>
+#include <commdlg.h>
 #include <stdio.h>
-#include "windows.h"
+#include "richedit.h"
 
-HINSTANCE           hinstance;
+HINSTANCE           hInstGlobal;
 HWND                hwndMDIClient;
-HWND                array[10];
+HWND                array[ARRAY_LENGTH];
 
 wchar_t             szFrame[] = L"Main Window Frame Class";
 wchar_t             szChild[] = L"MDI Window Child Class";
 
 BOOL addHwndToArr(HWND hWnd){
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < ARRAY_LENGTH; ++i) {
         if (array[i] == 0){
             array[i] = hWnd;
             return TRUE;
@@ -27,7 +33,7 @@ BOOL addHwndToArr(HWND hWnd){
 }
 
 BOOL delHwndFromArr(HWND hwnd){
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < ARRAY_LENGTH; ++i) {
         if (array[i] == hwnd){
             array[i] = 0;
             SendMessage(hwndMDIClient, WM_MDIDESTROY, hwnd, 1);
@@ -49,7 +55,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
                      LPSTR lpCmdLine,
                      int nCmdShow){
 
-    hinstance = hInstance;
+    hInstGlobal = hInstance;
     
     if (!InitializeApplication()){
         printf("An error occurred");
@@ -99,7 +105,7 @@ BOOL WINAPI InitializeApplication()
     wc.style         = CS_HREDRAW | CS_VREDRAW;
     wc.lpfnWndProc   = (WNDPROC) FrameWndProc;
 
-    wc.hInstance     = hinstance;
+    wc.hInstance     = hInstGlobal;
     wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
     wc.hbrBackground = (HBRUSH) (COLOR_APPWORKSPACE + 1);
     wc.lpszClassName = szFrame;
@@ -120,14 +126,19 @@ BOOL WINAPI InitializeApplication()
 
 LRESULT CALLBACK FrameWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 
+    LPWSTR filePath = malloc(sizeof(WCHAR) * 256);
+    HFILE hFile;
+    LPSTR str = malloc(sizeof(CHAR) * 1024);
+    DWORD bytesToRead;
+
     switch(uMsg){
         case WM_CREATE:
         {
-            HMENU hmenu = CreateMenu();
+            HMENU hmenuFile = CreateMenu();
 
-            SetMenu(hWnd, hmenu);
+            SetMenu(hWnd, hmenuFile);
 
-            AppendMenu(hmenu, MF_ENABLED | MF_POPUP,
+            AppendMenu(hmenuFile, MF_ENABLED | MF_POPUP,
                        CM_NEWMDIWND, L"New MDI Window");
 
             DrawMenuBar(hWnd);
@@ -137,21 +148,75 @@ LRESULT CALLBACK FrameWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
             ccs.hWindowMenu = GetSubMenu(GetMenu(hWnd), 1);
             ccs.idFirstChild = 1000;
 
-            hwndMDIClient = CreateWindow( L"MDICLIENT", (LPCTSTR) NULL,
+            hwndMDIClient = CreateWindow(L"MDICLIENT", (LPCTSTR) NULL,
                                           WS_CHILD | WS_CLIPCHILDREN | WS_VSCROLL | WS_HSCROLL | WS_VISIBLE | MDIS_ALLCHILDSTYLES,
-                                          0, 0, 0, 0, hWnd, 0, hinstance, (LPSTR) &ccs);
+                                         0, 0, 0, 0, hWnd, 0, hInstGlobal, (LPSTR) &ccs);
 
             ShowWindow(hwndMDIClient, SW_SHOW);
 
         }
         break;
+        case AWM_SENDTEXT:
+        {
 
+            SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)lParam);
+            for (int i = 0; i < ARRAY_LENGTH; ++i) {
+                if (array[i] != 0)
+                    SendMessageA(array[i], AWM_TEXT, 0, (LPSTR)lParam);
+
+            }
+
+        }
+            break;
         case WM_COMMAND:{
             switch (wParam) {
                 case CM_NEWMDIWND: {
+                    if (FindWindowEx(hwndMDIClient, NULL, szChild,  L"MDI child window") == NULL){
+                        OPENFILENAME ofn = {};
+                        ofn.hInstance = hInstGlobal;
+                        ofn.lStructSize = sizeof(OPENFILENAME);
+                        ofn.hwndOwner = hwndMDIClient;
+                        ofn.lpstrFile = filePath;
+                        ofn.nMaxFile = sizeof(WCHAR) * 256;
+                        ofn.lpstrFilter = L"all\0*.*\0";
+                        ofn.nFilterIndex = 1;
+                        ofn.lpstrFileTitle = NULL;
+                        ofn.nMaxFileTitle = 0;
+                        ofn.lpstrInitialDir = NULL;
+                        ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+                        ofn.lpstrTitle = L"Select file";
+                        ZeroMemory(filePath, sizeof(filePath));
+                        if(GetOpenFileNameW(&ofn) == TRUE){
+                            ZeroMemory(str, sizeof(str));
+                            hFile = CreateFile(filePath, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+                            ReadFile(hFile, str, 255, &bytesToRead, NULL);
+                            str[bytesToRead] = '\0';
+                            SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)str);
+                            CloseHandle(hFile);
+                        } else {
+                            break;
+                        }
+                    } else {
+
+                        HWND sample;
+
+                        for (int i = 0; i < ARRAY_LENGTH; ++i) {
+                            if (array[i] != 0){
+                                sample = array[i];
+                                break;
+                            }
+                        }
+
+                        GetWindowTextA(FindWindowEx(sample, NULL, NULL, NULL), str, 1024);
+                        DWORD err = GetLastError();
+                        printf(" ");
+
+                    }
                     HWND mdiChildWindow = createMdiChildWindow();
-                    if (addHwndToArr(mdiChildWindow))
-                        ShowWindow(mdiChildWindow, SW_SHOW);
+                    if (addHwndToArr(mdiChildWindow)) {
+                        SendMessage(mdiChildWindow, AWM_TEXT, 0, str);
+
+                    }
                     else MessageBox(hWnd, L"You can't create more MDI windows.", NULL, MB_OK);
                 }
                     break;
@@ -180,9 +245,34 @@ LRESULT CALLBACK FrameWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 
 LRESULT CALLBACK MDIChildWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 
-    switch(uMsg){
+    HWND textEdit;
 
-        case WM_CREATE:
+    if (uMsg == WM_CREATE) {
+        LoadLibrary(TEXT("riched32.dll"));
+
+        textEdit = CreateWindow(RICHEDIT_CLASS, L"", WS_BORDER | WS_CHILD
+        | WS_VISIBLE | ES_AUTOHSCROLL | ES_AUTOVSCROLL | ES_MULTILINE, 100, 0, 300, 100,
+        hWnd, NULL, hInstGlobal, NULL);
+        DWORD err = GetLastError();
+
+        SendMessage(textEdit, EM_SETEVENTMASK, 0, ENM_CHANGE);
+        SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)textEdit);
+
+    } else {
+        textEdit = (HWND)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+    }
+
+    switch(uMsg){
+        case WM_COMMAND:
+            switch(HIWORD(wParam)){
+                case EN_CHANGE:
+                {
+                    LPSTR str = malloc(sizeof(CHAR) * 1024);
+                    GetWindowTextA(textEdit, str, 1024);
+                    SendMessageA(FindWindow(szFrame, NULL), AWM_SENDTEXT, 0, str);
+                }
+                    break;
+            }
             break;
         case WM_CHILDACTIVATE:
             break;
@@ -194,6 +284,10 @@ LRESULT CALLBACK MDIChildWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
             EndPaint(hWnd, &ps);
         }
         break;
+        case AWM_TEXT:
+            SendMessageA(textEdit, WM_SETTEXT, 0, (LPSTR)lParam);
+            SendMessageA(textEdit, EM_SETSEL, strlen((LPSTR)lParam), strlen((LPSTR)lParam));
+            break;
         case WM_CLOSE:
             delHwndFromArr(hWnd);
             SendMessage(hwndMDIClient, WM_MDIDESTROY, hWnd, 1);
@@ -208,7 +302,7 @@ HWND createMdiChildWindow(){
     MDICREATESTRUCT mcs;
 
     mcs.szClass = szChild;
-    mcs.hOwner  = hinstance;
+    mcs.hOwner  = hInstGlobal;
     mcs.szTitle = L"MDI child window";
 
     mcs.x = mcs.cx = CW_USEDEFAULT;
