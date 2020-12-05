@@ -240,10 +240,9 @@ LRESULT CALLBACK MDIChildWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
                     SendMessageA(FindWindow(szFrame, NULL), FM_SENDTEXT, 0, 0);
 
                     HWND tmp = FindWindowEx(hwndMDIClient, hWnd,0, 0);
-                    for (int i = 0; i < num-1; ++i) {
+
                         SendMessageA(tmp, UPDATE, NULL, NULL);
-                        tmp = FindWindowEx(hwndMDIClient, tmp, NOT_UPDATE, NULL );
-                    }
+
 
                 }
                     break;
