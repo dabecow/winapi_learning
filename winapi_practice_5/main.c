@@ -11,6 +11,12 @@
 #define DC_SWITCHCOLOR 0x1337
 #define DF_RESET 0x1341
 
+struct LastLine{
+    POINT p1;
+    POINT p2;
+    BOOL allow;
+};
+
 const wchar_t   CLASS_NAME[] = L"MainWindow";
 
 HINSTANCE       currentHInstance;
@@ -26,7 +32,8 @@ struct FigureNode*     FIGURES_HEAD;
 
 
 struct Figure*         currentFigure;
-struct DotNode         *lastDotNode;
+struct DotNode         *currentDotNode;
+struct LastLine        lastLine;
 
 BOOL WINAPI InitializeApplication();
 void WINAPI createMenu(HWND hWnd);
@@ -137,7 +144,7 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
         {
             createMenu(hWnd);
             currentFigure = NULL;
-            lastDotNode = NULL;
+            currentDotNode = NULL;
             FIGURES_HEAD = NULL;
             hpen  = CreatePen(PS_SOLID, 10, RGB(255,0,0));
 
@@ -167,11 +174,12 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 
             while(node != NULL){
 
-                DrawFigure(node->figure, hCmpDC, hpen);
+                DrawFigure(&node->figure, hCmpDC, node->figure.pen);
 
                 node = node->next;
             }
-
+            if (currentFigure != NULL)
+                DrawFigure(currentFigure, hCmpDC, currentFigure->pen);
 
             SetStretchBltMode(hdc, COLORONCOLOR);
             BitBlt(hdc, 0, 0, clientRect.right, clientRect.bottom,
@@ -196,15 +204,22 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                 p.y = GET_Y_LPARAM(lParam);
 
                 currentFigure = CreateFigure(p, hpen);
-                lastDotNode = AddDot(p, currentFigure);
-                AddFigure(currentFigure);
+                currentDotNode = AddDot(p);
 
 
             } else {
-                p.x = GET_X_LPARAM(lParam);
-                p.y = GET_Y_LPARAM(lParam);
-                lastDotNode->point = p;
-                lastDotNode = AddDot(p, currentFigure);
+                struct DotNode* node = GetLastDot();
+                if(IsVectorIntersect(node, currentDotNode) == TRUE){
+//                    currentDotNode->allow = 0;
+                    MessageBox(NULL, L"Dots error", L"Error!", MB_OK | MB_ICONERROR);
+//                    setup->currentNode = NULL;
+                } else {
+
+                    p.x = GET_X_LPARAM(lParam);
+                    p.y = GET_Y_LPARAM(lParam);
+                    currentDotNode->point = p;
+                    currentDotNode = AddDot(p);
+                }
             }
 
         }
@@ -216,7 +231,7 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                 p.x = GET_X_LPARAM(lParam);
                 p.y = GET_Y_LPARAM(lParam);
 
-                lastDotNode->point = p;;
+                currentDotNode->point = p;;
 
                 RECT paintRect;
                 GetClientRect(hWnd, &paintRect);
@@ -227,11 +242,17 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
             break;
 
         case WM_RBUTTONDOWN:{
+            if (currentFigure == NULL || currentFigure->dotsNumber < 3){
+                MessageBoxA(NULL, "The figure is a dot or a line", "Error", MB_ICONSTOP | MB_OK);
+                return 0;
+            }
             if (mouseIsDown) {
                 mouseIsDown = FALSE;
-                FinishFigure(currentFigure);
+                FinishFigure();
+                AddFigure();
 
                 currentFigure = NULL;
+
                 RECT paintRect;
                 GetClientRect(hWnd, &paintRect);
                 InvalidateRect(hWnd, &paintRect, TRUE);

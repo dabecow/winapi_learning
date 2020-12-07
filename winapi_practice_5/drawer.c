@@ -9,8 +9,8 @@ void DrawLine(HDC hdc, HPEN pen, POINT p1, POINT p2){
     }
 }
 
-void DrawFigure(struct Figure figure, HDC hdc, HPEN pen){
-    struct DotNode* node = figure.DOTS_HEAD;
+void DrawFigure(struct Figure *figure, HDC hdc, HPEN pen){
+    struct DotNode* node = figure->DOTS_HEAD;
     if (node == NULL)
         return;
 
@@ -21,7 +21,7 @@ void DrawFigure(struct Figure figure, HDC hdc, HPEN pen){
         startPoint = node->next->point;
 
         node = node->next;
-        if (node == figure.DOTS_HEAD)
+        if (node == figure->DOTS_HEAD)
             break;
     }
 }

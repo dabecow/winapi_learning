@@ -1,7 +1,8 @@
 #ifndef UNTITLED_FIGURELIST_H
 #define UNTITLED_FIGURELIST_H
 
-struct FigureNode* FIGURES_HEAD;
+struct FigureNode*  FIGURES_HEAD;
+struct Figure*      currentFigure;
 struct Figure;
 
 struct DotNode{
@@ -11,7 +12,8 @@ struct DotNode{
 
 struct Figure{
     struct DotNode* DOTS_HEAD;
-
+    int finished;
+    int dotsNumber;
     HPEN pen;
 
 };
@@ -22,9 +24,14 @@ struct FigureNode{
 };
 
 struct Figure* CreateFigure(POINT p, HPEN hpen);
-struct FigureNode* AddFigure(struct Figure *figure);
-struct DotNode* AddDot(POINT point, struct Figure *figure);
-struct DotNode* GetLastDot(struct Figure *figure);
-void FinishFigure(struct Figure *figure);
+struct FigureNode* AddFigure();
+struct DotNode* AddDot(POINT point);
+struct DotNode* GetLastDot();
+void FinishFigure();
+
+WINBOOL Intersect(struct DotNode* a, struct DotNode* b, struct DotNode* c, struct DotNode* d);
+WINBOOL IsVectorIntersect(struct DotNode* a, struct DotNode* b);
+WINBOOL IsPointInside(int x, int y);
+
 void ClearList();
 #endif //UNTITLED_FIGURELIST_H

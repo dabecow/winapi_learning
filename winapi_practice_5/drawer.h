@@ -9,7 +9,7 @@
 #include "FigureList.h"
 
 void DrawLine(HDC hdc, HPEN pen, POINT p1, POINT p2);
-void DrawFigure(struct Figure figure, HDC hdc, HPEN pen);
+void DrawFigure(struct Figure *figure, HDC hdc, HPEN pen);
 BOOL GetColor(HWND hwnd, COLORREF *clrref);
 
 #endif //WINAPI_PRACTICE_5_DRAWER_H
