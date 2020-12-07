@@ -24,16 +24,36 @@ HINSTANCE       currentHInstance;
 boolean         mouseIsDown = FALSE;
 
 HBRUSH          hbrush;
-HPEN            hpen;
-
-POINT           p;
+HPEN            currentPen;
+HPEN            redPen;
+HPEN            greenPen;
 
 struct FigureNode*     FIGURES_HEAD;
 
 
 struct Figure*         currentFigure;
 struct DotNode         *currentDotNode;
-struct LastLine        lastLine;
+struct LastLine        *lastLine = NULL;
+
+void updateLastLine(POINT point, BOOL allow, BOOL new){
+
+    if (new == TRUE){
+        free(lastLine);
+        lastLine = malloc(sizeof(struct LastLine));
+        lastLine->p1 = point;
+    } else {
+        lastLine->p1 = currentDotNode->point;
+        lastLine->p2 = point;
+    }
+
+    lastLine->allow = allow;
+}
+
+void repaint(HWND hWnd){
+    RECT paintRect;
+    GetClientRect(hWnd, &paintRect);
+    InvalidateRect(hWnd, &paintRect, TRUE);
+}
 
 BOOL WINAPI InitializeApplication();
 void WINAPI createMenu(HWND hWnd);
@@ -95,7 +115,6 @@ BOOL WINAPI InitializeApplication()
     wc.lpszClassName = CLASS_NAME;
     wc.hCursor = LoadCursor(NULL, IDC_CROSS);
 
-    hpen = CreatePen(PS_SOLID, 10, RGB(0,0,0));
     hbrush = CreateSolidBrush(GetSysColor(COLOR_ACTIVECAPTION));
     if (!RegisterClass (&wc) )
         return FALSE;
@@ -118,7 +137,7 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 
                     if(GetColor(hWnd, &clrref))
                     {
-                        hpen  = CreatePen(PS_SOLID, 10, clrref);
+                        currentPen  = CreatePen(PS_SOLID, 10, clrref);
                         hbrush = CreateSolidBrush(clrref);
 
                     }
@@ -146,9 +165,10 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
             currentFigure = NULL;
             currentDotNode = NULL;
             FIGURES_HEAD = NULL;
-            hpen  = CreatePen(PS_SOLID, 10, RGB(255,0,0));
+            currentPen  = CreatePen(PS_SOLID, 10, RGB(0, 0, 0));
+            greenPen = CreatePen(PS_SOLID, 10, RGB(0, 255, 0));
+            redPen = CreatePen(PS_SOLID, 10, RGB(255, 0, 0));
 
-//            hbrush = CreateSolidBrush(GetSysColor(COLOR_ACTIVECAPTION));
             return 0;
         }
         case WM_CLOSE:
@@ -178,6 +198,12 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 
                 node = node->next;
             }
+            if (lastLine != NULL)
+                DrawLine(hCmpDC, greenPen, lastLine->p1, lastLine->p2);
+
+            if (lastLine != NULL){
+
+            }
             if (currentFigure != NULL)
                 DrawFigure(currentFigure, hCmpDC, currentFigure->pen);
 
@@ -196,46 +222,54 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
         }
             break;
         case WM_LBUTTONDOWN: {
-
+            free(lastLine);
             mouseIsDown = TRUE;
             if (currentFigure == NULL){
-
+                POINT p;
                 p.x = GET_X_LPARAM(lParam);
                 p.y = GET_Y_LPARAM(lParam);
 
-                currentFigure = CreateFigure(p, hpen);
-                currentDotNode = AddDot(p);
-
+                currentFigure = CreateFigure(p, currentPen);
+                updateLastLine(p, TRUE, TRUE);
+//                lastLine.p1 = p;
+                currentDotNode = currentFigure->DOTS_HEAD;
+//                currentDotNode = AddDot(p);
 
             } else {
-                struct DotNode* node = GetLastDot();
-                if(IsVectorIntersect(node, currentDotNode) == TRUE){
+//                struct DotNode* node = GetLastDot();
+//                if(IsVectorIntersect(node, currentDotNode) == TRUE){
 //                    currentDotNode->allow = 0;
-                    MessageBox(NULL, L"Dots error", L"Error!", MB_OK | MB_ICONERROR);
-//                    setup->currentNode = NULL;
-                } else {
-
+//                    MessageBox(NULL, L"Dots error", L"Error!", MB_OK | MB_ICONERROR);
+////                    setup->currentNode = NULL;
+//                } else {
+                    POINT p;
                     p.x = GET_X_LPARAM(lParam);
                     p.y = GET_Y_LPARAM(lParam);
-                    currentDotNode->point = p;
                     currentDotNode = AddDot(p);
-                }
+                    updateLastLine(p, TRUE, FALSE);
+                    repaint(hWnd);
+
+//                    currentDotNode = AddDot(p);
+//                }
             }
 
         }
+
             break;
         case WM_MOUSEMOVE:
         {
             if (mouseIsDown) {
-
+                POINT p;
                 p.x = GET_X_LPARAM(lParam);
                 p.y = GET_Y_LPARAM(lParam);
+//                struct DotNode* node = GetLastDot();
 
-                currentDotNode->point = p;;
+//                if (IsVectorIntersect(lastLine->p1, lastLine->p2))
+                updateLastLine(p, TRUE, FALSE);
+//                currentDotNode->point = p;;
 
-                RECT paintRect;
-                GetClientRect(hWnd, &paintRect);
-                InvalidateRect(hWnd, &paintRect, TRUE);
+                repaint(hWnd);
+
 
             }
         }
@@ -248,14 +282,15 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
             }
             if (mouseIsDown) {
                 mouseIsDown = FALSE;
+                free(lastLine);
+                lastLine = NULL;
                 FinishFigure();
                 AddFigure();
 
                 currentFigure = NULL;
 
-                RECT paintRect;
-                GetClientRect(hWnd, &paintRect);
-                InvalidateRect(hWnd, &paintRect, TRUE);
+                repaint(hWnd);
+
             }
         }
         break;
@@ -264,7 +299,7 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
         {
             // Удаляем созданные нами кисть и перо
             DeleteBrush(hbrush);
-            DeletePen(hpen);
+            DeletePen(currentPen);
             PostQuitMessage(0);
         }
 

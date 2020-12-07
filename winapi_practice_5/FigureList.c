@@ -9,7 +9,7 @@ struct Figure* CreateFigure(POINT p, HPEN hpen){
     figure->DOTS_HEAD = HEAD;
     figure->pen = hpen;
     figure->finished = 0;
-    figure->dotsNumber = 0;
+    figure->dotsNumber = 1;
     return figure;
 }
 
@@ -49,7 +49,7 @@ struct DotNode* AddDot(POINT point){
 
 struct DotNode* GetLastDot(){
     struct DotNode* iterator = currentFigure->DOTS_HEAD;
-    while (iterator->next->next != NULL){
+    while (iterator->next != NULL){
         iterator = iterator->next;
     }
     return iterator;
