@@ -11,5 +11,7 @@
 void DrawLine(HDC hdc, HPEN pen, POINT p1, POINT p2);
 void DrawFigure(struct Figure *figure, HDC hdc, HPEN pen);
 BOOL GetColor(HWND hwnd, COLORREF *clrref);
+void FillFigure(struct Figure *figure, HDC hdc);
+void FillFigureAlgorithm(struct Figure* figure, HDC hdc);
 
 #endif //WINAPI_PRACTICE_5_DRAWER_H

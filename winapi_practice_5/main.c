@@ -27,7 +27,7 @@ HBRUSH          hbrush;
 HPEN            currentPen;
 HPEN            redPen;
 HPEN            greenPen;
-
+COLORREF        color;
 struct FigureNode*     FIGURES_HEAD;
 
 
@@ -54,6 +54,16 @@ void repaint(HWND hWnd){
     RECT paintRect;
     GetClientRect(hWnd, &paintRect);
     InvalidateRect(hWnd, &paintRect, TRUE);
+}
+
+void putErrorMessagebox(){
+    HWND errorWnd = FindWindowA(NULL, "Error");
+    if  (errorWnd != NULL){
+        DestroyWindow(errorWnd);
+    }
+
+    MessageBox(NULL, L"Dots error", L"Error", MB_OK | MB_ICONERROR);
+
 }
 
 BOOL WINAPI InitializeApplication();
@@ -134,12 +144,12 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
         {
             switch (wParam) {
                 case DC_SWITCHCOLOR:{
-                    COLORREF clrref;
 
-                    if(GetColor(hWnd, &clrref))
+
+                    if(GetColor(hWnd, &color))
                     {
-                        currentPen  = CreatePen(PS_SOLID, 10, clrref);
-                        hbrush = CreateSolidBrush(clrref);
+                        currentPen  = CreatePen(PS_SOLID, 10, color);
+                        hbrush = CreateSolidBrush(color);
 
                     }
 
@@ -196,6 +206,19 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
             while(node != NULL){
 
                 DrawFigure(&node->figure, hCmpDC, node->figure.pen);
+                if (node->figure.finished == 1)
+                    FillFigure(&node->figure, hCmpDC);
+
+//                    RECT paintRect = getPaintRect(&node->figure);
+//                    for (int x = 0; x < paintRect.right; x++) {
+//                        for (int y = 0; y < paintRect.bottom; y++) {
+//                            if (IsPointInsideFigure(x, y, &node->figure) == TRUE) {
+//                                SetPixel(hCmpDC, x, y, node->figure.color);
+//                                SetPixel(hCmpDC, x, y, node->figure.color);
+//                            }
+//                        }
+//                    }
+//                    node->figure.toBeFilled = 0;
 
                 node = node->next;
             }
@@ -231,7 +254,7 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                 p.x = GET_X_LPARAM(lParam);
                 p.y = GET_Y_LPARAM(lParam);
 
-                currentFigure = CreateFigure(p, currentPen);
+                currentFigure = CreateFigure(p, currentPen, color);
                 updateLastLine(p, TRUE, TRUE);
 //                lastLine.p1 = p;
                 currentDotNode = currentFigure->DOTS_HEAD;
@@ -254,8 +277,7 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 //                    currentDotNode = AddDot(p);
 //                }
             } else {
-                    if(FindWindowA(NULL, "Error") == NULL)
-                        MessageBox(NULL, L"Dots error", L"Error", MB_OK | MB_ICONERROR);
+                    putErrorMessagebox();
             }
 
         }
@@ -285,9 +307,17 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 
         case WM_RBUTTONDOWN:{
             if (currentFigure == NULL || currentFigure->dotsNumber < 3 || IsVectorIntersect(lastLine->p1, currentFigure->DOTS_HEAD->point) == TRUE){
-                if(FindWindowA(NULL, "Error") == NULL)
-                    MessageBoxA(NULL, "The figure is a dot or a line", "Error", MB_ICONSTOP | MB_OK);
-                return 0;
+                POINT p;
+                p.x = GET_X_LPARAM(lParam);
+                p.y = GET_Y_LPARAM(lParam);
+                struct Figure* figure = getFigureByPoint(p);
+                if (figure != NULL){
+                    figure->toBeFilled = 1;
+                    repaint(hWnd);
+                } else {
+                    putErrorMessagebox();
+                    return 0;
+                }
             }
             if (mouseIsDown) {
                 mouseIsDown = FALSE;
@@ -301,6 +331,8 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                 repaint(hWnd);
 
             }
+
+
         }
         break;
 
@@ -324,12 +356,12 @@ void WINAPI createMenu(HWND hWnd){
 
     SetMenu(hWnd, hmenu);
 
-    AppendMenu(hmenu, MF_ENABLED | MF_POPUP,
-               (UINT)hmenuFile, L"File");
+//    AppendMenu(hmenu, MF_ENABLED | MF_POPUP,
+//               (UINT)hmenuFile, L"File");
 
-    AppendMenu(hmenuFile, MF_ENABLED | MF_STRING,
+    AppendMenu(hmenu, MF_ENABLED | MF_STRING,
                DC_SWITCHCOLOR,    L"Change color");
-    AppendMenu(hmenuFile, MF_ENABLED | MF_STRING,
+    AppendMenu(hmenu, MF_ENABLED | MF_STRING,
                DF_RESET,    L"Reset");
     DrawMenuBar(hWnd);
 
