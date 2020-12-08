@@ -78,12 +78,8 @@ void ClearList(){
     FIGURES_HEAD = NULL;
 }
 
-WINBOOL Intersect(struct DotNode* a, struct DotNode* b, struct DotNode* c, struct DotNode* d){
-    POINT pa, pb, pc, pd;
-    pa = a->point;
-    pb = b->point;
-    pc = c->point;
-    pd = d->point;
+WINBOOL Intersect(POINT pa, POINT pb, POINT pc, POINT pd){
+
 
 
     if((pa.x == pd.x && pa.y == pd.y) || (pb.x == pc.x && pb.y == pc.y))
@@ -122,7 +118,7 @@ WINBOOL Intersect(struct DotNode* a, struct DotNode* b, struct DotNode* c, struc
     return TRUE;
 }
 
-WINBOOL IsVectorIntersect(struct DotNode* a, struct DotNode* b){
+WINBOOL IsVectorIntersect(POINT a, POINT b){
 //    struct FigureNode* figureNode = FIGURES_HEAD;
 //    if (FIGURES_HEAD == NULL && currentFigure != NULL)
 //        figureNode = currentFigure;
@@ -131,7 +127,7 @@ WINBOOL IsVectorIntersect(struct DotNode* a, struct DotNode* b){
         struct DotNode* prev = currentFigure->DOTS_HEAD;
         struct DotNode* next = prev->next;
         while(next != NULL){
-            if(Intersect(a, b, prev, next) == TRUE)
+            if(Intersect(a, b, prev->point, next->point) == TRUE)
                 return TRUE;
             next = next->next;
             prev = prev->next;
@@ -142,52 +138,52 @@ WINBOOL IsVectorIntersect(struct DotNode* a, struct DotNode* b){
     return FALSE;
 }
 
-WINBOOL IsPointInside(int x, int y){
-    struct DotNode* vA1 = malloc(sizeof(struct DotNode));
-    struct DotNode* vA2 = malloc(sizeof(struct DotNode));
-    struct DotNode* vB1 = malloc(sizeof(struct DotNode));
-    struct DotNode* vB2 = malloc(sizeof(struct DotNode));
-
-    vA1->point.x = x;
-    vA1->point.y = y;
-    vA2->point.x = x + 2000;
-    vA2->point.y = y + 10;
-    vB1->point.x = x;
-    vB1->point.y = y;
-    vB2->point.x = x + 10;
-    vB2->point.y = y + 2000;
-
-    struct FigureNode* figureNode = FIGURES_HEAD;
-
-    int intersectsA = 0;
-    int intersectsB = 0;
-
-    while(figureNode  != NULL){
-        if(figureNode->figure.finished == 1){
-            struct DotNode* first = figureNode->figure.DOTS_HEAD;
-            struct DotNode* prev = figureNode->figure.DOTS_HEAD;
-            struct DotNode* next = prev->next;
-            while(next != NULL){
-                if(Intersect(vA1, vA2, prev, next) == TRUE)
-                    intersectsA++;
-                if(Intersect(vB1, vB2, prev, next) == TRUE)
-                    intersectsB++;
-                next = next->next;
-                prev = prev->next;
-            }
-            if(Intersect(vA1, vA2, first, prev) == TRUE)
-                intersectsA++;
-            if(Intersect(vB1, vB2, first, prev) == TRUE)
-                intersectsB++;
-            if(intersectsA % 2 != 0 && intersectsB % 2 != 0){
-                *currentFigure = figureNode->figure;
-                return TRUE;
-            }
-            intersectsA = 0;
-            intersectsB = 0;
-        }
-        figureNode = figureNode->next;
-    }
-
-    return FALSE;
-}
+//WINBOOL IsPointInside(int x, int y){
+//    struct DotNode* vA1 = malloc(sizeof(struct DotNode));
+//    struct DotNode* vA2 = malloc(sizeof(struct DotNode));
+//    struct DotNode* vB1 = malloc(sizeof(struct DotNode));
+//    struct DotNode* vB2 = malloc(sizeof(struct DotNode));
+//
+//    vA1->point.x = x;
+//    vA1->point.y = y;
+//    vA2->point.x = x + 2000;
+//    vA2->point.y = y + 10;
+//    vB1->point.x = x;
+//    vB1->point.y = y;
+//    vB2->point.x = x + 10;
+//    vB2->point.y = y + 2000;
+//
+//    struct FigureNode* figureNode = FIGURES_HEAD;
+//
+//    int intersectsA = 0;
+//    int intersectsB = 0;
+//
+//    while(figureNode  != NULL){
+//        if(figureNode->figure.finished == 1){
+//            struct DotNode* first = figureNode->figure.DOTS_HEAD;
+//            struct DotNode* prev = figureNode->figure.DOTS_HEAD;
+//            struct DotNode* next = prev->next;
+//            while(next != NULL){
+//                if(Intersect(vA1, vA2, prev, next) == TRUE)
+//                    intersectsA++;
+//                if(Intersect(vB1, vB2, prev, next) == TRUE)
+//                    intersectsB++;
+//                next = next->next;
+//                prev = prev->next;
+//            }
+//            if(Intersect(vA1, vA2, first, prev) == TRUE)
+//                intersectsA++;
+//            if(Intersect(vB1, vB2, first, prev) == TRUE)
+//                intersectsB++;
+//            if(intersectsA % 2 != 0 && intersectsB % 2 != 0){
+//                *currentFigure = figureNode->figure;
+//                return TRUE;
+//            }
+//            intersectsA = 0;
+//            intersectsB = 0;
+//        }
+//        figureNode = figureNode->next;
+//    }
+//
+//    return FALSE;
+//}

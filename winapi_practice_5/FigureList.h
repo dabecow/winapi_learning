@@ -29,8 +29,8 @@ struct DotNode* AddDot(POINT point);
 struct DotNode* GetLastDot();
 void FinishFigure();
 
-WINBOOL Intersect(struct DotNode* a, struct DotNode* b, struct DotNode* c, struct DotNode* d);
-WINBOOL IsVectorIntersect(struct DotNode* a, struct DotNode* b);
+WINBOOL Intersect(POINT pa, POINT pb, POINT pc, POINT pd);
+WINBOOL IsVectorIntersect(POINT a, POINT b);
 WINBOOL IsPointInside(int x, int y);
 
 void ClearList();

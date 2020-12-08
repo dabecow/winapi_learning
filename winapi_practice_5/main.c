@@ -47,6 +47,7 @@ void updateLastLine(POINT point, BOOL allow, BOOL new){
     }
 
     lastLine->allow = allow;
+
 }
 
 void repaint(HWND hWnd){
@@ -151,7 +152,7 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                     GetClientRect(hWnd, &paintRect);
                     InvalidateRect(hWnd, &paintRect, FALSE);
                     currentFigure = NULL;
-
+                    lastLine = NULL;
                 }
                     break;
 
@@ -199,11 +200,12 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                 node = node->next;
             }
             if (lastLine != NULL)
-                DrawLine(hCmpDC, greenPen, lastLine->p1, lastLine->p2);
+                if (lastLine->allow == TRUE)
+                    DrawLine(hCmpDC, greenPen, lastLine->p1, lastLine->p2);
+                else
+                    DrawLine(hCmpDC, redPen, lastLine->p1, lastLine->p2);
 
-            if (lastLine != NULL){
 
-            }
             if (currentFigure != NULL)
                 DrawFigure(currentFigure, hCmpDC, currentFigure->pen);
 
@@ -222,9 +224,9 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
         }
             break;
         case WM_LBUTTONDOWN: {
-            free(lastLine);
             mouseIsDown = TRUE;
             if (currentFigure == NULL){
+                free(lastLine);
                 POINT p;
                 p.x = GET_X_LPARAM(lParam);
                 p.y = GET_Y_LPARAM(lParam);
@@ -235,7 +237,7 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                 currentDotNode = currentFigure->DOTS_HEAD;
 //                currentDotNode = AddDot(p);
 
-            } else {
+            } else if (lastLine->allow != FALSE){
 //                struct DotNode* node = GetLastDot();
 //                if(IsVectorIntersect(node, currentDotNode) == TRUE){
 //                    currentDotNode->allow = 0;
@@ -251,6 +253,9 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 
 //                    currentDotNode = AddDot(p);
 //                }
+            } else {
+                    if(FindWindowA(NULL, "Error") == NULL)
+                        MessageBox(NULL, L"Dots error", L"Error", MB_OK | MB_ICONERROR);
             }
 
         }
@@ -258,15 +263,18 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
             break;
         case WM_MOUSEMOVE:
         {
-            if (mouseIsDown) {
+            if (mouseIsDown && lastLine != NULL) {
                 POINT p;
                 p.x = GET_X_LPARAM(lParam);
                 p.y = GET_Y_LPARAM(lParam);
 //                struct DotNode* node = GetLastDot();
 
-//                if (IsVectorIntersect(lastLine->p1, lastLine->p2))
-                updateLastLine(p, TRUE, FALSE);
-//                currentDotNode->point = p;;
+                if (IsVectorIntersect(lastLine->p1, p) == TRUE){
+                    updateLastLine(p, FALSE, FALSE);
+                } else {
+                    updateLastLine(p, TRUE, FALSE);
+                }
+//                currentDotNode->point = p;
 
                 repaint(hWnd);
 
@@ -276,8 +284,9 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
             break;
 
         case WM_RBUTTONDOWN:{
-            if (currentFigure == NULL || currentFigure->dotsNumber < 3){
-                MessageBoxA(NULL, "The figure is a dot or a line", "Error", MB_ICONSTOP | MB_OK);
+            if (currentFigure == NULL || currentFigure->dotsNumber < 3 || IsVectorIntersect(lastLine->p1, currentFigure->DOTS_HEAD->point) == TRUE){
+                if(FindWindowA(NULL, "Error") == NULL)
+                    MessageBoxA(NULL, "The figure is a dot or a line", "Error", MB_ICONSTOP | MB_OK);
                 return 0;
             }
             if (mouseIsDown) {
