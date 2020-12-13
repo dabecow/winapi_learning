@@ -23,6 +23,7 @@ HINSTANCE       currentHInstance;
 
 boolean         mouseIsDown = FALSE;
 
+HMENU           hmenu;
 HBRUSH          hbrush;
 HPEN            currentPen;
 HPEN            redPen;
@@ -206,19 +207,7 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
             while(node != NULL){
 
                 DrawFigure(&node->figure, hCmpDC, node->figure.pen);
-                if (node->figure.finished == 1)
-                    FillFigure(&node->figure, hCmpDC);
-
-//                    RECT paintRect = getPaintRect(&node->figure);
-//                    for (int x = 0; x < paintRect.right; x++) {
-//                        for (int y = 0; y < paintRect.bottom; y++) {
-//                            if (IsPointInsideFigure(x, y, &node->figure) == TRUE) {
-//                                SetPixel(hCmpDC, x, y, node->figure.color);
-//                                SetPixel(hCmpDC, x, y, node->figure.color);
-//                            }
-//                        }
-//                    }
-//                    node->figure.toBeFilled = 0;
+                FillFigure(&node->figure, hCmpDC);
 
                 node = node->next;
             }
@@ -256,6 +245,7 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 
                 currentFigure = CreateFigure(p, currentPen, color);
                 updateLastLine(p, TRUE, TRUE);
+                EnableMenuItem(hmenu, GetMenuItemID(hmenu, 0), MF_GRAYED);
 //                lastLine.p1 = p;
                 currentDotNode = currentFigure->DOTS_HEAD;
 //                currentDotNode = AddDot(p);
@@ -325,7 +315,7 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                 lastLine = NULL;
                 FinishFigure();
                 AddFigure();
-
+                EnableMenuItem(hmenu, GetMenuItemID(hmenu, 0), MF_ENABLED);
                 currentFigure = NULL;
 
                 repaint(hWnd);
@@ -351,13 +341,10 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 }
 
 void WINAPI createMenu(HWND hWnd){
-    HMENU hmenu = CreateMenu();
-    HMENU hmenuFile = CreatePopupMenu();
+    hmenu = CreateMenu();
+
 
     SetMenu(hWnd, hmenu);
-
-//    AppendMenu(hmenu, MF_ENABLED | MF_POPUP,
-//               (UINT)hmenuFile, L"File");
 
     AppendMenu(hmenu, MF_ENABLED | MF_STRING,
                DC_SWITCHCOLOR,    L"Change color");
