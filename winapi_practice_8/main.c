@@ -377,6 +377,7 @@ void InitPlayers(){
 }
 
 BOOL CheckWinner(){
+    repaint(MainWindowHandle);
     if (player.shipDotsNumber == 0){
         MessageBoxA(MainWindowHandle, "Winner!", "PC won!", MB_OK);
         return TRUE;
