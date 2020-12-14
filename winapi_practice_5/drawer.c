@@ -19,7 +19,6 @@ void DrawFigure(struct Figure *figure, HDC hdc, HPEN pen){
     while (node->next != NULL){
         DrawLine(hdc, pen, startPoint, node->next->point);
         startPoint = node->next->point;
-
         node = node->next;
         if (node == figure->DOTS_HEAD)
             break;
@@ -56,3 +55,38 @@ BOOL GetColor(HWND hwnd, COLORREF *clrref)
     else
         return FALSE;
 }
+
+void FillFigure(struct Figure *figure, HDC hdc){
+        if (figure->filled == 1) {
+            POINT *array = malloc(sizeof(POINT) * figure->dotsNumber);
+            struct DotNode *dotNode = figure->DOTS_HEAD;
+            for (int i = 0; i < figure->dotsNumber; ++i) {
+                array[i] = dotNode->point;
+                dotNode = dotNode->next;
+            }
+            HBRUSH brush = CreateSolidBrush(figure->color);
+            SelectObject(hdc, brush);
+            Polygon(hdc, array, figure->dotsNumber);
+        } else if (figure->toBeFilled == 1){
+            FillFigureAlgorithm(figure, hdc);
+        }
+//        TransparentBlt(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+}
+
+void FillFigureAlgorithm(struct Figure* figure, HDC hdc) {
+
+    RECT paintRect = getPaintRect(figure);
+    for (int x = 0; x < paintRect.right; x++) {
+        for (int y = 0; y < paintRect.bottom; y++) {
+            if (IsPointInsideFigure(x, y, figure) == TRUE) {
+                SetPixel(hdc, x, y, figure->color);
+                SetPixel(hdc, x, y, figure->color);
+            }
+        }
+    }
+    figure->toBeFilled = 0;
+    figure->filled = 1;
+}
+
+
+
