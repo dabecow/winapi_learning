@@ -162,6 +162,8 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         }
             break;
 
+        case WM_ERASEBKGND:
+            return 1;
         case WM_CLOSE:
             PostQuitMessage(0);
             return 0;

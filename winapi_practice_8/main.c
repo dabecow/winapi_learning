@@ -11,9 +11,12 @@
 #define BORDER_SIZE 2
 #define SHIPS_DOTS_NUMBER 10
 
-HINSTANCE           currentHInstance;
-HWND                MainWindowHandle;
-LPWSTR              CLASS_NAME = L"MainWindow";
+
+
+struct Player;
+enum CellState;
+struct Cell;
+struct ChosenCell;
 
 enum CellState{
     Free,
@@ -21,27 +24,12 @@ enum CellState{
     Missed,
     Bombed
 };
-
-//point = [0, 10]
-struct Player;
-
-BOOL turnIsPossible;
 struct Cell{
-//    BOOL isPlayer;
     POINT point;
-    RECT pixelRect;
     POINT pixelTopLeftPoint;
     enum CellState cellState;
     struct Player *player;
 };
-
-//struct Ship{
-//    byte length;
-//    POINT startPoint;
-//    POINT endPoint;
-//    BOOL isDown;
-//    struct Cell *cells;
-//};
 
 struct ChosenCell{
     struct Cell *cell;
@@ -51,19 +39,9 @@ struct ChosenCell{
 struct Player{
     int shipDotsNumber;
     struct Cell battlefield[10][10];
-    BOOL isPlayer;
 };
 
-struct Player player;
-struct Player pc;
-
-struct Player *currentPlayer;
-//
-//struct Cell pcBattleField[10][10];
-//struct Cell playerBattleField[10][10];
-
-//void showFields(HDC hdc, int offsetX, int offsetY, int size);
-//void placeShips();
+BOOL turnIsPossible;
 
 void showFields(HDC hdc, struct Cell battlefield[][10]);
 BOOL changeChosenCell(WPARAM wParam);
@@ -75,12 +53,9 @@ BOOL MakeShot(struct Cell *cell);
 void InitPlayers();
 BOOL CheckWinner();
 void placeRandomly(struct Cell battlefield[][10]);
-
 int get_rand_range_int(const int min, const int max);
 
-//int            randomSeed;
 const COLORREF rgbRed   =  0x000000FF;
-const COLORREF rgbGreen =  0x0000FF00;
 const COLORREF rgbBlue  =  0x00FFCC66;
 const COLORREF rgbBlack =  0x00000000;
 const COLORREF rgbWhite =  0x00FFFFFF;
@@ -94,7 +69,16 @@ HBRUSH hWhiteBrush;
 HBRUSH hRedBrush;
 HBRUSH hBlackBrush;
 
+struct Player player;
+struct Player pc;
+
+struct Player *currentPlayer;
+
 struct ChosenCell chosenCell;
+
+HINSTANCE currentHInstance;
+HWND MainWindowHandle;
+LPWSTR CLASS_NAME = L"MainWindow";
 
 BOOL WINAPI InitializeApplication();
 
@@ -176,12 +160,9 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             hRedPen = CreatePen(PS_SOLID, 2, rgbRed);
 
             hBlueBrush = CreateSolidBrush(rgbBlue);
-            hWhiteBrush = CreateSolidBrush(rgbBlue);
+            hWhiteBrush = CreateSolidBrush(rgbWhite);
             hRedBrush = CreateSolidBrush(rgbRed);
             hBlackBrush = CreateSolidBrush(rgbBlack);
-
-//            randomSeed = time(NULL);
-//            srand(randomSeed);
 
             InitCells(500, 10, CELL_SIZE, pc.battlefield, &pc);
 
@@ -194,7 +175,6 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             chosenCell.i = 0;
             chosenCell.j = 0;
             turnIsPossible = TRUE;
-//            int r = rand();      // Returns a pseudo-random integer between 0 and RAND_MAX.
             InitPlayers();
         }
             break;
@@ -217,9 +197,6 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
             FillRect(hCmpDC, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1));
 
-//            showFields(hCmpDC, 20, 20, 10);
-
-
             showFields(hCmpDC, pc.battlefield);
 
             showFields(hCmpDC, player.battlefield);
@@ -232,8 +209,6 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             DeleteDC(hCmpDC);
             DeleteObject(hBmp);
             hCmpDC = NULL;
-
-
 
             EndPaint(hWnd, &ps);
         }
@@ -254,15 +229,11 @@ void InitCells(int offsetX, int offsetY, int size, struct Cell battlefield[][10]
             battlefield[i][j].cellState = Free;
             battlefield[i][j].point.x = j;
             battlefield[i][j].point.y = i;
-            battlefield[i][j].pixelTopLeftPoint.x = offsetX + size * j + BORDER_SIZE*j;
-            battlefield[i][j].pixelTopLeftPoint.y = offsetY + size * i + BORDER_SIZE*i;
+            battlefield[i][j].pixelTopLeftPoint.x = offsetX + size * j + BORDER_SIZE;
+            battlefield[i][j].pixelTopLeftPoint.y = offsetY + size * i + BORDER_SIZE;
             battlefield[i][j].player = player;
         }
     }
-
-//    battlefield[0][0].cellState = Bombed;
-//    battlefield[0][1].cellState = Missed;
-//    battlefield[0][2].cellState = Ship;
 
 }
 
@@ -283,7 +254,6 @@ void showFields(HDC hdc, struct Cell battlefield[][10]){
 
 void DrawCell(HDC hdc, struct Cell *cell){
 
-
     SelectObject(hdc, hBlackPen);
     SelectObject(hdc, hBlueBrush);
 
@@ -292,8 +262,6 @@ void DrawCell(HDC hdc, struct Cell *cell){
 
     Rectangle(hdc, startPoint.x, startPoint.y, startPoint.x + CELL_SIZE, startPoint.y + CELL_SIZE);
 
-
-
     int paint_cell_size = CELL_SIZE * 0.75;
 
     startPoint.x += 0.11 * CELL_SIZE;
@@ -301,8 +269,8 @@ void DrawCell(HDC hdc, struct Cell *cell){
 
     if (cell->cellState == Ship){
         if (cell->player == &player) {
-            SelectObject(hdc, hWhiteBrush);
             SelectObject(hdc, hWhitePen);
+            SelectObject(hdc, hWhiteBrush);
 
             Rectangle(hdc, startPoint.x, startPoint.y, startPoint.x + paint_cell_size, startPoint.y + paint_cell_size);
         }
@@ -365,7 +333,7 @@ BOOL changeChosenCell(WPARAM wParam){
 void ProceedTurn(){
     if (turnIsPossible == FALSE)
         return;
-//    srand(randomSeed);
+
     BOOL canMakeShot = TRUE;
 
     if (currentPlayer == &player){
@@ -397,13 +365,10 @@ BOOL MakeShot(struct Cell *cell){
 }
 
 void InitPlayers(){
-    player.isPlayer = TRUE;
     player.shipDotsNumber = SHIPS_DOTS_NUMBER;
 
-    pc.isPlayer = FALSE;
     pc.shipDotsNumber = SHIPS_DOTS_NUMBER;
 
-//    srand(randomSeed);
     int r = rand() % 1;
     if (r == 0)
         currentPlayer = &player;
@@ -412,6 +377,7 @@ void InitPlayers(){
 }
 
 BOOL CheckWinner(){
+    repaint(MainWindowHandle);
     if (player.shipDotsNumber == 0){
         MessageBoxA(MainWindowHandle, "Winner!", "PC won!", MB_OK);
         return TRUE;
@@ -420,10 +386,6 @@ BOOL CheckWinner(){
         return TRUE;
     }
     return FALSE;
-}
-
-void Start(){
-
 }
 
 int get_rand_range_int(const int min, const int max) {
